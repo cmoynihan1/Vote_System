@@ -25,7 +25,7 @@ gem "bootsnap", require: false
 gem "sassc-rails"
 
 group :development, :test do
-  gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  gem 'rspec-rails'
 end
 
 group :development do
@@ -39,4 +39,3 @@ group :test do
   gem "webdrivers"
 end
 
-gem "activeadmin", "~> 2.14"
