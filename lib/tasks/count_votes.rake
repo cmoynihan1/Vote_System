@@ -2,32 +2,30 @@ desc 'Count Votes From File [Text File => path to text file]'
 task :count_votes, [:text_file] => :environment do |task, args|
   VOTE = 'VOTE'.freeze
   VALID_SECTIONS = %w(Campaign Validity Choice CONN MSISDN GUID Shortcode).freeze
-  total_lines = 0
   valid_lines = 0
+  invalid_lines =0
 
   campaigns_to_ingest = CountingHash.new
   File.open(args[:text_file]).each do |line|
     begin
-      total_lines+= 1
       sections = line.split(' ')
       validate_header(sections.shift)
-      sections.shift
+      sections.shift #Skip epoch time section
 
-      vote = parse_vote(sections)
-      if vote['Validity'] == 'during'
-        campaigns_to_ingest.count_item(vote['Campaign'.freeze], vote['Choice'.freeze])
+      parse_vote(sections).tap do |vote|
+        choice = vote['Validity'] == 'during'? vote['Choice'.freeze] : 'Invalid'.freeze
+        campaigns_to_ingest.count_item(vote['Campaign'.freeze], choice)
         valid_lines+= 1
-      else
-        campaigns_to_ingest.count_item(vote['Campaign'.freeze], 'Invalid'.freeze)
-        valid_lines += 1
       end
     rescue MalformedLineError
+      invalid_lines += 1
       next
     end
   end
   Campaign.ingest_campaigns(campaigns_to_ingest)
 
-  puts "#{total_lines} parsed.  #{valid_lines} were valid."
+  puts "Ingestion complete."
+  puts "#{valid_lines} lines were valid. #{invalid_lines} were invalid."
 end
 
 def parse_vote(sections)
